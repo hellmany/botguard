@@ -4,7 +4,7 @@ go 1.24.6
 
 require (
 	github.com/gin-gonic/gin v1.10.1
-	github.com/hellmany/botguard v0.0.0
+	github.com/hellmany/botguard v0.1.0
 )
 
 require (
@@ -40,5 +40,3 @@ require (
 	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/hellmany/botguard => ../

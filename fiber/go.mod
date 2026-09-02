@@ -4,7 +4,7 @@ go 1.24.6
 
 require (
 	github.com/gofiber/fiber/v2 v2.52.8
-	github.com/hellmany/botguard v0.0.0
+	github.com/hellmany/botguard v0.1.0
 )
 
 require (
@@ -25,5 +25,3 @@ require (
 	github.com/x-way/crawlerdetect v0.2.30 // indirect
 	golang.org/x/sys v0.28.0 // indirect
 )
-
-replace github.com/hellmany/botguard => ../

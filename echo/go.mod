@@ -3,7 +3,7 @@ module github.com/hellmany/botguard/echo
 go 1.24.6
 
 require (
-	github.com/hellmany/botguard v0.0.0
+	github.com/hellmany/botguard v0.1.0
 	github.com/labstack/echo/v4 v4.13.3
 )
 
@@ -23,5 +23,3 @@ require (
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 )
-
-replace github.com/hellmany/botguard => ../
