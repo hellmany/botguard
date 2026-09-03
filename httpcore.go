@@ -450,6 +450,16 @@ func StatsResetHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "could not clear the log: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+	// The pass-rate card is summed from the fingerprint table, so the log
+	// alone is not enough: zero the counters too. The pairs and their
+	// verdict labels stay — those are knowledge, not statistics.
+	if bgStoreDB != nil {
+		if _, err := bgStoreDB.Exec(`UPDATE ` + bgStoreTable +
+			` SET hits = 0, challenged = 0, solved = 0, failed = 0`); err != nil {
+			http.Error(w, "log cleared, but counters not: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
 	noteStatsReset()
 	http.Redirect(w, r, "/__bg/stats?force=1", http.StatusSeeOther)
 }

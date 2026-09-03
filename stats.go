@@ -478,7 +478,7 @@ a{color:#0066cc;text-decoration:none}.nav a{margin-right:12px}
 	if ch.Err == "" && ch.Challenged > 0 {
 		notSolved := ch.Challenged - ch.Solved
 		fmt.Fprintf(&b, `<div class="card" style="margin-bottom:16px">`+
-			`<h2>Challenge pass rate (all time)</h2><table>`+
+			`<h2>Challenge pass rate (since last reset)</h2><table>`+
 			`<tr><td class="k">shown</td><td class="n">%d</td></tr>`+
 			`<tr><td class="k">solved (real browser)</td><td class="n">%d<br><span style="color:#999">%.1f%%</span></td></tr>`+
 			`<tr><td class="k">not solved (left or bot)</td><td class="n">%d<br><span style="color:#999">%.1f%%</span></td></tr>`+
