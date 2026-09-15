@@ -230,3 +230,21 @@ func TestLimitsFromParams(t *testing.T) {
 		t.Error("subnet lost its limit: unlisted dimensions must keep the default")
 	}
 }
+
+func TestGlobalFingerprintDimension(t *testing.T) {
+	found := false
+	for _, d := range dimensionsB() {
+		if d.Name == "fp" {
+			found = true
+			if !d.Aggregate || !d.NeedFingerprint {
+				t.Error("fp must aggregate and require a fingerprint")
+			}
+			if k := d.Key(Signals{Host: "a.com", FPrint: "j"}); k != "j" {
+				t.Errorf("fp key must not include the host, got %q", k)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("global fp dimension missing")
+	}
+}

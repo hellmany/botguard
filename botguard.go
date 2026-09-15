@@ -121,7 +121,7 @@ type Config struct {
 	TrackingCookie string
 	// SharedScoreDims lists dimensions whose key aggregates unrelated
 	// clients (a fingerprint, an ASN). They challenge but never block and
-	// never revoke a clearance. nil means fp@host, asn_fp@host, asn.
+	// never revoke a clearance. nil means fp@host, fp, asn_fp@host, asn.
 	SharedScoreDims []string
 	// LogAllowed also records verdicts for visitors that were let through.
 	// Off by default, since allows dominate the log.
@@ -1505,7 +1505,7 @@ func (g *Guard) effChallengeScore(v Verdict) float64 {
 func (g *Guard) isSharedDim(dim string) bool {
 	dims := g.cfg.SharedScoreDims
 	if dims == nil {
-		dims = []string{"fp@host", "asn_fp@host", "asn"}
+		dims = []string{"fp@host", "fp", "asn_fp@host", "asn"}
 	}
 	for _, d := range dims {
 		if d == dim {

@@ -139,8 +139,8 @@ add on top.
 | `CaptchaAt` | `0` (off) | character-entry captcha. Zero disables the stage |
 | `BlockAt` | `20.0` | twenty times over — 403. Deliberately high: a single IP may be an office or a mobile carrier |
 | `TrackingCookie` | empty (off) | name of a cookie set for every visitor on first contact — the challenge 503 included — with a random per-browser id. The guard itself never reads it; its purpose is the frontend log: the id is also mirrored into the `X-BG-Trk` response header on every backend response, the `/__bg/*` verify endpoints included, so log `bg:$upstream_http_x_bg_trk` in nginx — unlike the request cookie, the header is present already on the very first 503, so even a visitor who left right after the challenge is linkable. See [Following one visitor](#following-one-visitor) |
-| `SharedScoreDims` | `fp@host`, `asn_fp@host`, `asn` | dimensions whose key covers many unrelated clients. They challenge but **never block, never revoke a clearance and never raise the proof-of-work difficulty or the challenge stage**: a botnet driving real Chrome through residential proxies carries the JA4 of every genuine Chrome user on the site, so both a block and a maximum-difficulty proof by that key hit people. Measured on live traffic: 165k botnet IPs solved 1 challenge out of 140k — the base challenge alone separates them |
-| `HardReasons` | `fp@host`, `asn_fp@host` | reasons that trigger the checkbox **regardless of score**. Needed for distributed networks: a client spread over thousands of IPs produces a low ratio and would otherwise keep getting cheap proof-of-work |
+| `SharedScoreDims` | `fp@host`, `fp`, `asn_fp@host`, `asn` | dimensions whose key covers many unrelated clients. They challenge but **never block, never revoke a clearance and never raise the proof-of-work difficulty or the challenge stage**: a botnet driving real Chrome through residential proxies carries the JA4 of every genuine Chrome user on the site, so both a block and a maximum-difficulty proof by that key hit people. Measured on live traffic: 165k botnet IPs solved 1 challenge out of 140k — the base challenge alone separates them |
+| `HardReasons` | `fp@host`, `fp`, `asn_fp@host` | reasons that trigger the checkbox **regardless of score**. Needed for distributed networks: a client spread over thousands of IPs produces a low ratio and would otherwise keep getting cheap proof-of-work |
 
 ### Dimension limits (`Limits`)
 
@@ -156,6 +156,7 @@ thing to tune for your traffic.
 | `ip@host` | 250 | host + IP | address on one site |
 | `subnet@host` | 1500 | host + subnet | subnet on one site |
 | `fp@host` | 200 | host + JA4 | **botnets and proxy networks**: thousands of IPs, one TLS stack |
+| `fp` | 2000 | JA4 | the same, summed over every host: a botnet spread across a hundred sites stays under `fp@host` on each and adds up here |
 | `asn_fp@host` | 900 | host + ASN + JA4 | distributed scraping from one datacenter |
 | `asn` | 5000 | ASN | entire datacenter (hosting only) |
 

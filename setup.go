@@ -72,6 +72,7 @@ var aiCrawlers = map[string]bool{
 }
 
 var toolAgents = []string{
+	"lightpanda", // headless browser built for scrapers and agents
 	"curl/", "wget", "python-requests", "python-urllib", "go-http-client",
 	"java/", "apache-httpclient", "okhttp", "scrapy", "libwww-perl",
 	"masscan", "httpie", "axios/", "node-fetch", "guzzlehttp", "aiohttp",
@@ -381,7 +382,7 @@ func DefaultParams() Params {
 		CheckboxAt: 6.0,
 		// Fingerprint dimensions show the checkbox regardless of score: a
 		// client spread over thousands of IPs never produces a high multiple.
-		HardReasons: []string{"score:fp@host", "score:asn_fp@host"},
+		HardReasons: []string{"score:fp@host", "score:fp", "score:asn_fp@host"},
 		BlockAI:     false,
 		// Requests per minute per dimension key; tune from your own traffic.
 		Limits: map[string]float64{
@@ -392,6 +393,7 @@ func DefaultParams() Params {
 			"ip@host":     250,
 			"subnet@host": 1500,
 			"fp@host":     200,
+			"fp":          2000,
 			"asn_fp@host": 900,
 			"asn":         5000,
 		},
@@ -548,6 +550,13 @@ func dimensionsB() []Dimension {
 		// spread over time, for a botnet it is a spike.
 		{Name: "fp@host", Limit: 200, Aggregate: true, NeedFingerprint: true,
 			Key: func(s Signals) string { return s.Host + "|" + s.FPrint }},
+
+		// The same fingerprint across every host. A botnet spread over a
+		// hundred sites stays under fp@host on each of them and adds up to
+		// tens of thousands of requests a minute in total; one Chrome build
+		// used by real people never comes close.
+		{Name: "fp", Limit: 2000, Aggregate: true, NeedFingerprint: true,
+			Key: func(s Signals) string { return s.FPrint }},
 
 		// Distributed scraping from datacenters: many IPs across /24s, one
 		// ASN, one fingerprint. HostingOnly, so carriers and CGNAT are

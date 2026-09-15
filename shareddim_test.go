@@ -5,7 +5,7 @@ import "testing"
 func TestSharedDimDefaults(t *testing.T) {
 	g := testGuard(t)
 	for dim, want := range map[string]bool{
-		"fp@host": true, "asn_fp@host": true, "asn": true,
+		"fp@host": true, "fp": true, "asn_fp@host": true, "asn": true,
 		"ip_ua@host": false, "ip": false, "subnet@host": false,
 	} {
 		if got := g.isSharedDim(dim); got != want {
