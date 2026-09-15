@@ -555,7 +555,7 @@ func dimensionsB() []Dimension {
 		// hundred sites stays under fp@host on each of them and adds up to
 		// tens of thousands of requests a minute in total; one Chrome build
 		// used by real people never comes close.
-		{Name: "fp", Limit: 2000, Aggregate: true, NeedFingerprint: true,
+		{Name: "fp", Limit: 2000, Aggregate: true, NeedFingerprint: true, NoFactor: true,
 			Key: func(s Signals) string { return s.FPrint }},
 
 		// Distributed scraping from datacenters: many IPs across /24s, one

@@ -42,18 +42,23 @@ func TestSharedScoreDoesNotRaiseDifficulty(t *testing.T) {
 	}
 }
 
-// Network-type multipliers must not reach fingerprint dimensions: a botnet
-// arriving through "business" ranges was getting a 4x fp limit for free.
-func TestFingerprintDimsIgnoreNATFactor(t *testing.T) {
+// The site-wide fingerprint count ignores network-type multipliers (a
+// botnet through "business" ranges was getting a 4x limit for free), while
+// per-host dimensions keep them: phones behind carrier NAT need the room.
+func TestGlobalFingerprintIgnoresNATFactor(t *testing.T) {
 	g := testGuard(t)
 	s := Signals{UsageType: "business"}
 	for _, d := range dimensionsB() {
 		f := g.limitFactor(d, s)
-		if d.NeedFingerprint && f != 1 {
-			t.Errorf("%s: factor %v, want 1", d.Name, f)
-		}
-		if d.Name == "ip" && f == 1 {
-			t.Errorf("ip must still get the NAT relaxation")
+		switch d.Name {
+		case "fp":
+			if f != 1 {
+				t.Errorf("fp: factor %v, want 1", f)
+			}
+		case "fp@host", "ip":
+			if f == 1 {
+				t.Errorf("%s must keep the NAT relaxation", d.Name)
+			}
 		}
 	}
 }

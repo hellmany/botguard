@@ -645,6 +645,8 @@ func (g *Guard) classifyUA(ua string) (UAKind, *KnownBot) {
 type Dimension struct {
 	Name  string
 	Limit float64 // requests per Window considered normal
+	// NoFactor exempts the dimension from the network-type multipliers.
+	NoFactor bool
 	// Key produces the key value. An empty string means "skip this dimension".
 	Key func(Signals) string
 	// Aggregate marks a dimension that counts everyone behind a single address.
@@ -705,11 +707,12 @@ func DefaultDimensions() []Dimension {
 func (g *Guard) limitFactor(d Dimension, s Signals) float64 {
 	np := g.cfg.Network
 
-	// NAT relaxation is about many people behind one address. A fingerprint
-	// dimension counts a TLS stack across addresses and networks, so the
-	// network type of one request says nothing about it: a botnet coming
-	// mostly through "business" ranges was getting a 4x limit for free.
-	if d.NeedFingerprint {
+	// NAT relaxation is about many people behind one address. The site-wide
+	// fingerprint count spans every address and network, so the network type
+	// of one request says nothing about it: a botnet coming mostly through
+	// "business" ranges was getting a 4x limit for free. Per-host dimensions
+	// keep the relaxation — phones behind carrier NAT need it.
+	if d.NoFactor {
 		return np.DefaultFactor
 	}
 
