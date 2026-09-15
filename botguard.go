@@ -705,6 +705,14 @@ func DefaultDimensions() []Dimension {
 func (g *Guard) limitFactor(d Dimension, s Signals) float64 {
 	np := g.cfg.Network
 
+	// NAT relaxation is about many people behind one address. A fingerprint
+	// dimension counts a TLS stack across addresses and networks, so the
+	// network type of one request says nothing about it: a botnet coming
+	// mostly through "business" ranges was getting a 4x limit for free.
+	if d.NeedFingerprint {
+		return np.DefaultFactor
+	}
+
 	if s.UsageType != "" {
 		if f, ok := np.Factors[s.UsageType]; ok {
 			// NAT relaxation applies to aggregate dimensions only.

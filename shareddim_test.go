@@ -41,3 +41,19 @@ func TestSharedScoreDoesNotRaiseDifficulty(t *testing.T) {
 		t.Errorf("personal overflow must escalate, got %d", d)
 	}
 }
+
+// Network-type multipliers must not reach fingerprint dimensions: a botnet
+// arriving through "business" ranges was getting a 4x fp limit for free.
+func TestFingerprintDimsIgnoreNATFactor(t *testing.T) {
+	g := testGuard(t)
+	s := Signals{UsageType: "business"}
+	for _, d := range dimensionsB() {
+		f := g.limitFactor(d, s)
+		if d.NeedFingerprint && f != 1 {
+			t.Errorf("%s: factor %v, want 1", d.Name, f)
+		}
+		if d.Name == "ip" && f == 1 {
+			t.Errorf("ip must still get the NAT relaxation")
+		}
+	}
+}
