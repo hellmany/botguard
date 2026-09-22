@@ -368,6 +368,12 @@ type Params struct {
 	Window      time.Duration // window of the rate counters
 	TrustedASN  []uint32      // networks where a datacenter means real people (WARP etc.)
 	TrustedIPs  []string      // own addresses: they bypass the guard entirely
+	// SkipPaths are URL prefixes the guard leaves alone, on top of the
+	// defaults (/healthz, /metrics, /__bg/). SkipFunc is the same for any
+	// other rule — host, extension, method. Skipped requests are neither
+	// counted nor logged.
+	SkipPaths []string
+	SkipFunc  func(r *http.Request) bool
 	ContactHTML string        // contact shown on the refusal page
 	Behavior    bool          // behavioral layer (a second Redis call per request)
 	SampleRate  float64       // share of requests that reach the MySQL stats
@@ -494,9 +500,16 @@ func NewConfig(p Params) Config {
 		}
 	}
 
-	// Own addresses bypass the guard entirely.
+	cfg.SkipPaths = append(cfg.SkipPaths, p.SkipPaths...)
+
+	// Own addresses bypass the guard entirely, and so does whatever the
+	// application's own SkipFunc says.
 	trusted := p.TrustedIPs
+	userSkip := p.SkipFunc
 	cfg.SkipFunc = func(r *http.Request) bool {
+		if userSkip != nil && userSkip(r) {
+			return true
+		}
 		ip := strings.TrimSpace(r.Header.Get("X-Real-IP"))
 		if ip == "" {
 			if xff := r.Header.Get("X-Forwarded-For"); xff != "" {

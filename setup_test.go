@@ -1,6 +1,8 @@
 package botguard
 
 import (
+	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
@@ -246,5 +248,31 @@ func TestGlobalFingerprintDimension(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("global fp dimension missing")
+	}
+}
+
+func TestParamsSkipPathsAndFunc(t *testing.T) {
+	p := DefaultParams()
+	p.Secret = "0123456789abcdef0123456789abcdef"
+	p.SkipPaths = []string{"/api/"}
+	p.SkipFunc = func(r *http.Request) bool { return r.Host == "office.example.com" }
+	g, err := New(nil, NewConfig(p))
+	if err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		path, host string
+		skip       bool
+	}{
+		{"/api/x", "a.com", true},
+		{"/__bg/stats", "a.com", true}, // default kept
+		{"/page", "office.example.com", true},
+		{"/page", "a.com", false},
+	}
+	for _, c := range cases {
+		r := httptest.NewRequest("GET", "http://"+c.host+c.path, nil)
+		if got := g.shouldSkip(r); got != c.skip {
+			t.Errorf("%s %s: skip=%v, want %v", c.host, c.path, got, c.skip)
+		}
 	}
 }

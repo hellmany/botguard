@@ -193,6 +193,8 @@ solve the challenge in the first place.
 | Parameter | Default | Purpose |
 |---|---|---|
 | `TrustedASN` | `13335` (Cloudflare) | networks where "datacenter" means real people: WARP, iCloud Private Relay. Treated as residential, exempt from hosting penalties |
+| `SkipPaths` | `/healthz`, `/metrics`, `/__bg/` | URL prefixes the guard leaves alone; yours are added to the defaults. Skipped requests are neither counted nor logged |
+| `SkipFunc` | `nil` | the same as a function of the request — by host, extension, method, anything. Combined with `TrustedIPs`: either one skips |
 | `TrustedIPs` | `127.0.0.1`, `::1` | your own addresses — monitoring, internal services. Bypass the guard entirely. Prefixes work: `"10.0."` covers the subnet |
 | `ContactHTML` | empty | contact link on the denial page: `<a href="mailto:abuse@example.com">…</a>`. Empty hides the block. Worth filling in: someone blocked by mistake needs a way to reach you |
 | `Window` | `1m` | rate counter window. If you change it, revisit `Limits` — they are per window |
