@@ -188,6 +188,7 @@ type bgStats struct {
 }
 
 type bgChallengeStats struct {
+	Allowed    int64   `json:"allowed"` // passed without any challenge
 	Challenged int64   `json:"challenged"`
 	Solved     int64   `json:"solved"`
 	Failed     int64   `json:"failed"`
@@ -203,8 +204,8 @@ func challengeStats() bgChallengeStats {
 		return s
 	}
 	row := bgStoreDB.QueryRow(`SELECT COALESCE(SUM(challenged),0), COALESCE(SUM(solved),0),
-	    COALESCE(SUM(failed),0) FROM ` + bgStoreTable)
-	if err := row.Scan(&s.Challenged, &s.Solved, &s.Failed); err != nil {
+	    COALESCE(SUM(failed),0), COALESCE(SUM(allowed),0) FROM ` + bgStoreTable)
+	if err := row.Scan(&s.Challenged, &s.Solved, &s.Failed, &s.Allowed); err != nil {
 		s.Err = err.Error()
 		return s
 	}
@@ -475,15 +476,22 @@ a{color:#0066cc;text-decoration:none}.nav a{margin-right:12px}
 
 	// Challenge pass rate, cumulative.
 	ch := st.Challenge
-	if ch.Err == "" && ch.Challenged > 0 {
+	if ch.Err == "" && (ch.Challenged > 0 || ch.Allowed > 0) {
 		notSolved := ch.Challenged - ch.Solved
+		seen := ch.Allowed + ch.Challenged
+		allowedPct := 0.0
+		if seen > 0 {
+			allowedPct = float64(ch.Allowed) * 100 / float64(seen)
+		}
 		fmt.Fprintf(&b, `<div class="card" style="margin-bottom:16px">`+
 			`<h2>Challenge pass rate (since last reset)</h2><table>`+
+			`<tr><td class="k">passed without a challenge</td><td class="n">%d<br><span style="color:#999">%.1f%% of seen</span></td></tr>`+
 			`<tr><td class="k">shown</td><td class="n">%d</td></tr>`+
 			`<tr><td class="k">solved (real browser)</td><td class="n">%d<br><span style="color:#999">%.1f%%</span></td></tr>`+
 			`<tr><td class="k">not solved (left or bot)</td><td class="n">%d<br><span style="color:#999">%.1f%%</span></td></tr>`+
 			`<tr><td class="k">failed (bad answer)</td><td class="n">%d</td></tr>`+
 			`</table></div>`,
+			ch.Allowed, allowedPct,
 			ch.Challenged, ch.Solved, ch.SolveRate,
 			notSolved, 100-ch.SolveRate, ch.Failed)
 	} else if ch.Err != "" {

@@ -48,6 +48,7 @@ func (d Dialect) upsertClause() string {
 		return ` ON DUPLICATE KEY UPDATE
       hits=hits+VALUES(hits), challenged=challenged+VALUES(challenged),
       solved=solved+VALUES(solved), failed=failed+VALUES(failed),
+      allowed=allowed+VALUES(allowed),
       ua=VALUES(ua), ua_family=VALUES(ua_family), last_asn=VALUES(last_asn),
       last_cc=VALUES(last_cc), last_type=VALUES(last_type),
       last_seen=VALUES(last_seen)`
@@ -55,6 +56,7 @@ func (d Dialect) upsertClause() string {
 	return ` ON CONFLICT (fp_kind, fingerprint, ua_hash) DO UPDATE SET
       hits=hits+EXCLUDED.hits, challenged=challenged+EXCLUDED.challenged,
       solved=solved+EXCLUDED.solved, failed=failed+EXCLUDED.failed,
+      allowed=allowed+EXCLUDED.allowed,
       ua=EXCLUDED.ua, ua_family=EXCLUDED.ua_family, last_asn=EXCLUDED.last_asn,
       last_cc=EXCLUDED.last_cc, last_type=EXCLUDED.last_type,
       last_seen=EXCLUDED.last_seen`
@@ -102,6 +104,7 @@ func SchemaFor(d Dialect, table string) []string {
   challenged  %[2]s         NOT NULL DEFAULT 0,
   solved      %[2]s         NOT NULL DEFAULT 0,
   failed      %[2]s         NOT NULL DEFAULT 0,
+  allowed     %[2]s         NOT NULL DEFAULT 0,
   verdict     VARCHAR(8)    NOT NULL DEFAULT 'unknown',
   first_seen  TIMESTAMP     NOT NULL,
   last_seen   TIMESTAMP     NOT NULL,

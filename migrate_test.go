@@ -65,3 +65,18 @@ func TestCreateTableIsIdempotent(t *testing.T) {
 		}
 	}
 }
+
+func TestAllowedCounterEverywhere(t *testing.T) {
+	if !strings.Contains(createTableSQL("t"), "allowed") {
+		t.Error("MySQL DDL lacks the allowed column")
+	}
+	for _, d := range []Dialect{DialectMySQL, DialectPostgres, DialectSQLite} {
+		if !strings.Contains(d.upsertClause(), "allowed") {
+			t.Errorf("%v upsert does not add allowed", d)
+		}
+		joined := strings.Join(SchemaFor(d, "t"), "\n")
+		if !strings.Contains(joined, "allowed") {
+			t.Errorf("%v DDL lacks the allowed column", d)
+		}
+	}
+}

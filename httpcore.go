@@ -66,6 +66,11 @@ func (g *Guard) HTTPMiddleware(next http.Handler) http.Handler {
 		if g.cfg.OnVerdict != nil {
 			g.cfg.OnVerdict(v)
 		}
+		if v.Decision == Allow {
+			// Passed with no challenge at all — the other side of the
+			// pass-rate card, which otherwise only sees who was challenged.
+			g.recordFP(v.Signals, fpEvent{allowed: 1})
+		}
 
 		w.Header().Set("X-BG-Score", strconv.FormatFloat(v.Score, 'f', 2, 64))
 		w.Header().Set("X-BG-Decision", v.Decision.String())
@@ -455,7 +460,7 @@ func StatsResetHTTP(w http.ResponseWriter, r *http.Request) {
 	// verdict labels stay — those are knowledge, not statistics.
 	if bgStoreDB != nil {
 		if _, err := bgStoreDB.Exec(`UPDATE ` + bgStoreTable +
-			` SET hits = 0, challenged = 0, solved = 0, failed = 0`); err != nil {
+			` SET hits = 0, challenged = 0, solved = 0, failed = 0, allowed = 0`); err != nil {
 			http.Error(w, "log cleared, but counters not: "+err.Error(), http.StatusInternalServerError)
 			return
 		}

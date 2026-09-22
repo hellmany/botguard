@@ -1053,6 +1053,7 @@ CREATE TABLE IF NOT EXISTS bg_fingerprints (
   challenged  BIGINT UNSIGNED     NOT NULL DEFAULT 0,
   solved      BIGINT UNSIGNED     NOT NULL DEFAULT 0,
   failed      BIGINT UNSIGNED     NOT NULL DEFAULT 0,
+  allowed     BIGINT UNSIGNED     NOT NULL DEFAULT 0,
   verdict     ENUM('unknown','good','bad') NOT NULL DEFAULT 'unknown',
   first_seen  DATETIME            NOT NULL,
   last_seen   DATETIME            NOT NULL,
@@ -1091,17 +1092,17 @@ type fpEvent struct {
 	cc     string
 	utype  string
 	// exactly one of the counters is 1
-	hit, challenged, solved, failed uint64
+	hit, challenged, solved, failed, allowed uint64
 }
 
 type fpAgg struct {
-	ua                               string
-	family                           string
-	asn                              uint32
-	cc                               string
-	utype                            string
-	hits, challenged, solved, failed uint64
-	last                             time.Time
+	ua                                        string
+	family                                    string
+	asn                                       uint32
+	cc                                        string
+	utype                                     string
+	hits, challenged, solved, failed, allowed uint64
+	last                                      time.Time
 }
 
 type fingerprintStore struct {
@@ -1127,7 +1128,7 @@ func ensureTable(cfg FingerprintStoreConfig) error {
 
 	probe := "SELECT 1 FROM " + cfg.Table + " LIMIT 1"
 	if _, err := cfg.DB.QueryContext(ctx, probe); err == nil {
-		return nil
+		return ensureColumn(ctx, cfg, "allowed")
 	}
 
 	for _, stmt := range SchemaFor(cfg.Dialect, cfg.Table) {
@@ -1139,6 +1140,30 @@ func ensureTable(cfg FingerprintStoreConfig) error {
 	// with another instance); probe again.
 	if _, err := cfg.DB.QueryContext(ctx, probe); err != nil {
 		return fmt.Errorf("%s created but not readable: %w", cfg.Table, err)
+	}
+	return nil
+}
+
+// ensureColumn adds a counter column to a table created by an older version.
+// The dialects disagree on "ADD COLUMN IF NOT EXISTS", so probe the column
+// instead and alter only when the probe fails.
+func ensureColumn(ctx context.Context, cfg FingerprintStoreConfig, col string) error {
+	probe := "SELECT " + col + " FROM " + cfg.Table + " LIMIT 1"
+	if _, err := cfg.DB.QueryContext(ctx, probe); err == nil {
+		return nil
+	}
+	typ := "BIGINT"
+	switch cfg.Dialect {
+	case DialectMySQL:
+		typ = "BIGINT UNSIGNED"
+	case DialectSQLite:
+		typ = "INTEGER"
+	}
+	if _, err := cfg.DB.ExecContext(ctx, "ALTER TABLE "+cfg.Table+" ADD COLUMN "+col+" "+typ+" NOT NULL DEFAULT 0"); err != nil {
+		return fmt.Errorf("adding column %s to %s: %w", col, cfg.Table, err)
+	}
+	if _, err := cfg.DB.QueryContext(ctx, probe); err != nil {
+		return fmt.Errorf("column %s added to %s but not readable: %w", col, cfg.Table, err)
 	}
 	return nil
 }
@@ -1259,6 +1284,7 @@ func (s *fingerprintStore) run() {
 			a.challenged += e.challenged
 			a.solved += e.solved
 			a.failed += e.failed
+			a.allowed += e.allowed
 			a.last = time.Now()
 			if len(agg) >= s.cfg.MaxBatch {
 				s.flush(agg)
@@ -1286,6 +1312,7 @@ func (s *fingerprintStore) run() {
 					a.challenged += e.challenged
 					a.solved += e.solved
 					a.failed += e.failed
+					a.allowed += e.allowed
 					a.last = time.Now()
 				default:
 					if len(agg) > 0 {
@@ -1306,20 +1333,20 @@ func (s *fingerprintStore) flush(agg map[fpKey]*fpAgg) {
 	sb.WriteString("INSERT INTO ")
 	sb.WriteString(s.cfg.Table)
 	sb.WriteString(" (fp_kind,fingerprint,ua_hash,ua,ua_family,last_asn,last_cc,last_type," +
-		"hits,challenged,solved,failed,first_seen,last_seen) VALUES ")
+		"hits,challenged,solved,failed,allowed,first_seen,last_seen) VALUES ")
 
-	args := make([]interface{}, 0, len(agg)*14)
+	args := make([]interface{}, 0, len(agg)*15)
 	i := 0
 	for k, a := range agg {
 		if i > 0 {
 			sb.WriteByte(',')
 		}
 		sb.WriteByte('(')
-		for c := 0; c < 14; c++ {
+		for c := 0; c < 15; c++ {
 			if c > 0 {
 				sb.WriteByte(',')
 			}
-			sb.WriteString(s.cfg.Dialect.placeholder(i*14 + c + 1))
+			sb.WriteString(s.cfg.Dialect.placeholder(i*15 + c + 1))
 		}
 		sb.WriteByte(')')
 		ts := a.last
@@ -1328,7 +1355,7 @@ func (s *fingerprintStore) flush(agg map[fpKey]*fpAgg) {
 		}
 		args = append(args, k.Kind, k.FP, k.UAHash, truncate(a.ua, 512), a.family,
 			a.asn, truncate(a.cc, 2), truncate(a.utype, 32),
-			a.hits, a.challenged, a.solved, a.failed, ts, ts)
+			a.hits, a.challenged, a.solved, a.failed, a.allowed, ts, ts)
 		i++
 	}
 	sb.WriteString(s.cfg.Dialect.upsertClause())

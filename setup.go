@@ -365,18 +365,18 @@ type Params struct {
 	ClearanceTTL   time.Duration // how long the pass lasts after a solution
 	TokenTTL       time.Duration // how long an issued token lives
 
-	Window      time.Duration // window of the rate counters
-	TrustedASN  []uint32      // networks where a datacenter means real people (WARP etc.)
-	TrustedIPs  []string      // own addresses: they bypass the guard entirely
+	Window     time.Duration // window of the rate counters
+	TrustedASN []uint32      // networks where a datacenter means real people (WARP etc.)
+	TrustedIPs []string      // own addresses: they bypass the guard entirely
 	// SkipPaths are URL prefixes the guard leaves alone, on top of the
 	// defaults (/healthz, /metrics, /__bg/). SkipFunc is the same for any
 	// other rule — host, extension, method. Skipped requests are neither
 	// counted nor logged.
-	SkipPaths []string
-	SkipFunc  func(r *http.Request) bool
-	ContactHTML string        // contact shown on the refusal page
-	Behavior    bool          // behavioral layer (a second Redis call per request)
-	SampleRate  float64       // share of requests that reach the MySQL stats
+	SkipPaths   []string
+	SkipFunc    func(r *http.Request) bool
+	ContactHTML string  // contact shown on the refusal page
+	Behavior    bool    // behavioral layer (a second Redis call per request)
+	SampleRate  float64 // share of requests that reach the MySQL stats
 }
 
 // DefaultParams returns the default parameters.
